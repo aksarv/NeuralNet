@@ -74,7 +74,7 @@ class Network
     {
         if (m1.GetLength(1) != m2.GetLength(0))
         {
-            throw new Exception("Matrix multiplication failed as matrices are not comforable");
+            throw new Exception("Matrix multiplication failed as matrices are not conformable");
         }
         double[,] result = new double[m1.GetLength(0), m2.GetLength(1)];
         for (int i = 0; i < m1.GetLength(0); i++)
