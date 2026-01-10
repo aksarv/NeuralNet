@@ -120,7 +120,7 @@ class Network
         double total_loss = 0.0;
         for (int i = 0; i < output.GetLength(0); i++)
         {
-            for (int j = 0; j < output.GetLength(0); j++)
+            for (int j = 0; j < output.GetLength(1); j++)
             {
                 total_loss += 0.5 * Math.Pow(expected[i, j] - output[i, j], 2);
             }
