@@ -135,7 +135,7 @@ class Network
         {
             for (int j = 0; j < hidden_layer_output.GetLength(1); j++)
             {
-                hidden_layer_output[i, j] = Sigmoid(hidden_layer_output[i, j] + bias_input_hidden[i, j]);
+                hidden_layer_output[i, j] = Sigmoid(hidden_layer_output[i, j] + bias_input_hidden[0, j]);
             }
         }
         return hidden_layer_output;
@@ -148,7 +148,7 @@ class Network
         {
             for (int j = 0; j < output_layer_output.GetLength(1); j++)
             {
-                output_layer_output[i, j] = Sigmoid(output_layer_output[i, j] + bias_input_hidden[i, j]);
+                output_layer_output[i, j] = Sigmoid(output_layer_output[i, j] + bias_input_hidden[0, j]);
             }
         }
         return output_layer_output;
@@ -161,7 +161,7 @@ class Network
         return output_layer_output;
     }
 
-    public void Step(double[,] input, double[,] expected)
+    public double Step(double[,] input, double[,] expected)
     {
         double[,] hidden_layer_output = ForwardInputHidden(input);
         double[,] output_layer_output = ForwardHiddenOutput(hidden_layer_output);
@@ -219,5 +219,33 @@ class Network
         {
             bias_input_hidden[0, j] -= learning_rate * d_loss_d_weights_inputs_hidden[0, j];
         }
+        return loss;
+    }
+
+    public void Write2D(double[,] a)
+    {
+        for (int i = 0; i < a.GetLength(0); i++)
+        {
+            for (int j = 0; j < a.GetLength(1); j++)
+            {
+                System.Console.Write(Convert.ToString(a[i, j]));
+                System.Console.Write(" ");
+            }
+            System.Console.WriteLine();
+        }
+    }
+
+    public void WriteNetwork()
+    {
+        System.Console.WriteLine("########## NETWORK DETAILS #############");
+        System.Console.WriteLine("Weights Input Hidden:");
+        Write2D(weights_input_hidden);
+        System.Console.WriteLine("Bias Input Hidden:");
+        Write2D(bias_input_hidden);
+        System.Console.WriteLine("Weights Hidden Output:");
+        Write2D(weights_hidden_output);
+        System.Console.WriteLine("Bias Hidden Output:");
+        Write2D(bias_hidden_output);
+        System.Console.WriteLine("########################################");
     }
 }
