@@ -1,2 +1,2 @@
 # NeuralNet
-Neural Network
+Neural Network from Scratch (not complete yet)
