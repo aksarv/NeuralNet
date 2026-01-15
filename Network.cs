@@ -1,15 +1,18 @@
 // Not complete
 
+namespace ProgrammingTest;
+
 class Network
 {
     public Random rnd = new Random();
     public int no_input;
     public int no_hidden;
     public int no_output;
-    public double[,] weights_input_hidden;
-    public double[,] weights_hidden_output;
-    public double[,] bias_input_hidden;
-    public double[,] bias_hidden_output;
+    public int no_batch;
+    public Matrix weights_input_hidden;
+    public Matrix weights_hidden_output;
+    public Matrix bias_input_hidden;
+    public Matrix bias_hidden_output;
     public double learning_rate;
 
     public double NextGaussian(int mean=0, int stdDev=1)
@@ -25,227 +28,104 @@ class Network
         no_input = inp;
         no_hidden = hid;
         no_output = ou;
-        weights_input_hidden = new double[inp, hid];
-        weights_hidden_output = new double[hid, ou];
+        double[,] weights_input_hidden_array = new double[inp, hid];
+        double[,] weights_hidden_output_array = new double[hid, ou];
         for (int i = 0; i < inp; i++)
         {
             for (int j = 0; j < hid; j++)
             {
-                weights_input_hidden[i, j] = NextGaussian();
+                weights_input_hidden_array[i, j] = NextGaussian();
             }
         }
         for (int i = 0; i < hid; i++)
         {
             for (int j = 0; j < ou; j++)
             {
-                weights_hidden_output[i, j] = NextGaussian();
+                weights_hidden_output_array[i, j] = NextGaussian();
             }
         }
-        bias_input_hidden = new double[1, hid];
-        bias_hidden_output = new double[1, ou];
-        double init_input_hidden_bias = NextGaussian();
-        double init_hidden_output_bias = NextGaussian();
-        for (int i = 0; i < hid; i++)
+        weights_input_hidden = new Matrix(weights_input_hidden_array);
+        weights_hidden_output = new Matrix(weights_hidden_output_array);
+        double[,] bias_input_hidden_array = new double[1, hid];
+        double[,] bias_hidden_output_array = new double[1, ou];
+        for (int j = 0; j < hid; j++)
         {
-            bias_input_hidden[0, i] = init_input_hidden_bias;
+            bias_input_hidden_array[0, j] = NextGaussian();
         }
-        for (int i = 0; i < ou; i++)
+        for (int j = 0; j < ou; j++)
         {
-            bias_hidden_output[0, i] = init_hidden_output_bias;
+            bias_hidden_output_array[0, j] = NextGaussian();
         }
+        bias_input_hidden = new Matrix(bias_input_hidden_array);
+        bias_hidden_output = new Matrix(bias_hidden_output_array);
         learning_rate = lr;
     }
 
-    public double Dot(double[] v1, double[] v2)
+    public Matrix ForwardInputHidden(double[,] input)
     {
-        if (v1.Length != v2.Length)
-        {
-            throw new Exception("Dot product failed as vectors are not the same length");
-        }
-        double result = 0;
-        for (int i = 0; i < v1.Length; i++)
-        {
-            result += v1[i] * v2[i];
-        }
-        return result;
+        Matrix matmul = new Matrix(input) % weights_input_hidden;
+        Matrix result = matmul + bias_input_hidden.Broadcast(input.GetLength(0));
+        Matrix activated = result.Sigmoid();
+        return activated;
     }
 
-    public double[,] MatMul(double[,] m1, double[,] m2)
+    public Matrix ForwardHiddenOutput(double[,] input)
     {
-        if (m1.GetLength(1) != m2.GetLength(0))
-        {
-            throw new Exception("Matrix multiplication failed as matrices are not conformable");
-        }
-        double[,] result = new double[m1.GetLength(0), m2.GetLength(1)];
-        for (int i = 0; i < m1.GetLength(0); i++)
-        {
-            for (int j = 0; j < m2.GetLength(1); j++)
-            {
-                double[] row = new double[m1.GetLength(1)];
-                for (int k = 0; k < m1.GetLength(1); k++)
-                {
-                    row[k] = m1[i, k];
-                }
-                double[] col = new double[m2.GetLength(0)];
-                for (int k = 0; k < m2.GetLength(0); k++)
-                {
-                    col[k] = m2[k, j];
-                }
-                result[i, j] = Dot(row, col);
-            }
-        }
-        return result;
+        Matrix matmul = new Matrix(input) % weights_hidden_output;
+        Matrix result = matmul + bias_hidden_output.Broadcast(input.GetLength(0));
+        Matrix activated = result.Sigmoid();
+        return activated;
     }
 
-    public double Sigmoid(double input)
+    public Matrix MSEError(Matrix output, Matrix expected)
     {
-        return 1.0 / (1.0 + Math.Exp(-input));
+        double[,] o = output.matrix;
+        double[,] e = expected.matrix;
+        int rows = o.GetLength(0);
+        int cols = o.GetLength(1);
+        double[,] result = new double[rows, cols];
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                result[i, j] = 0.5 * Math.Pow(e[i, j] - o[i, j], 2);
+            }
+        }
+        return new Matrix(result);
     }
 
-    public double[,] T(double[,] a)
+    public double Fit(double[,] input_array, double[,] expected_output_array)
     {
-        double[,] result = new double[a.GetLength(1), a.GetLength(0)];
-        for (int i = 0; i < a.GetLength(0); i++)
-        {
-            for (int j = 0; j < a.GetLength(1); j++)
-            {
-                result[j, i] = a[i, j];
-            }
-        }
-        return result;
-    }
-
-    public double MSELoss(double[,] output, double[,] expected)
-    {
-        double total_loss = 0.0;
-        for (int i = 0; i < output.GetLength(0); i++)
-        {
-            for (int j = 0; j < output.GetLength(1); j++)
-            {
-                total_loss += 0.5 * Math.Pow(expected[i, j] - output[i, j], 2);
-            }
-        }
-        return total_loss;
-    }
-
-    public double[,] ForwardInputHidden(double[,] input)
-    {
-        double[,] hidden_layer_output = MatMul(input, weights_input_hidden);
-        for (int i = 0; i < hidden_layer_output.GetLength(0); i++)
-        {
-            for (int j = 0; j < hidden_layer_output.GetLength(1); j++)
-            {
-                hidden_layer_output[i, j] = Sigmoid(hidden_layer_output[i, j] + bias_input_hidden[0, j]);
-            }
-        }
-        return hidden_layer_output;
-    }
-    
-    public double[,] ForwardHiddenOutput(double[,] hidden_layer_output)
-    {
-        double[,] output_layer_output = MatMul(hidden_layer_output, weights_hidden_output);
-        for (int i = 0; i < output_layer_output.GetLength(0); i++)
-        {
-            for (int j = 0; j < output_layer_output.GetLength(1); j++)
-            {
-                output_layer_output[i, j] = Sigmoid(output_layer_output[i, j] + bias_input_hidden[0, j]);
-            }
-        }
-        return output_layer_output;
-    }
-
-    public double[,] Predict(double[,] input)
-    {
-        double[,] hidden_layer_output = ForwardInputHidden(input);
-        double[,] output_layer_output = ForwardHiddenOutput(hidden_layer_output);
-        return output_layer_output;
-    }
-
-    public double Step(double[,] input, double[,] expected)
-    {
-        double[,] hidden_layer_output = ForwardInputHidden(input);
-        double[,] output_layer_output = ForwardHiddenOutput(hidden_layer_output);
-        // Loss
-        double loss = MSELoss(output_layer_output, expected);
-        // Backward Pass
-        double[,] d_loss_d_weights_hidden_output = new double[no_hidden, no_output];
-        double[,] d_loss_d_inputs_hidden_output = new double[1, no_hidden];
-        double[,] d_loss_d_bias_hidden_output = new double[1, no_output];
-        for (int i = 0; i < no_hidden; i++)
-        {
-            for (int j = 0; j < no_output; j++)
-            {
-                double d_loss_d_output = output_layer_output[0, j] - expected[0, j];
-                double d_output_d_preactivated = output_layer_output[0, j] * (1 - output_layer_output[0, j]);
-                double d_preactivated_d_weight = hidden_layer_output[0, i];
-                d_loss_d_weights_hidden_output[i, j] = d_loss_d_output * d_output_d_preactivated * d_preactivated_d_weight;
-                d_loss_d_bias_hidden_output[0, j] = d_loss_d_output * d_output_d_preactivated;
-                d_loss_d_inputs_hidden_output[0, i] += d_loss_d_output * d_output_d_preactivated * weights_hidden_output[i, j];
-            }
-        }
-        double[,] d_loss_d_weights_inputs_hidden = new double[no_input, no_hidden];
-        double[,] d_loss_d_bias_inputs_hidden = new double[1, no_hidden];
-        for (int i = 0; i < no_input; i++)
-        {
-            for (int j = 0; j < no_hidden; j++)
-            {
-                double d_loss_d_output = d_loss_d_inputs_hidden_output[0, j];
-                double d_output_d_preactivated = hidden_layer_output[0, j] * (1 - hidden_layer_output[0, j]);
-                double d_preactivated_d_weight = input[0, i];
-                d_loss_d_weights_inputs_hidden[i, j] = d_loss_d_output * d_output_d_preactivated * d_preactivated_d_weight;
-                d_loss_d_bias_inputs_hidden[0, j] = d_loss_d_output * d_output_d_preactivated;
-            }
-        }
-        // Update Weights and Biases
-        for (int i = 0; i < no_hidden; i++)
-        {
-            for (int j = 0; j < no_output; j++)
-            {
-                weights_hidden_output[i, j] -= learning_rate * d_loss_d_weights_hidden_output[i, j];
-            }
-        }
-        for (int j = 0; j < no_output; j++)
-        {
-            bias_hidden_output[0, j] -= learning_rate * d_loss_d_bias_hidden_output[0, j];
-        }
-        for (int i = 0; i < no_input; i++)
-        {
-            for (int j = 0; j < no_hidden; j++)
-            {
-                weights_input_hidden[i, j] -= learning_rate * d_loss_d_weights_inputs_hidden[i, j];
-            }
-        }
-        for (int j = 0; j < no_hidden; j++)
-        {
-            bias_input_hidden[0, j] -= learning_rate * d_loss_d_weights_inputs_hidden[0, j];
-        }
+        // Forward Pass
+        Matrix input = new Matrix(input_array);
+        Matrix expected_output = new Matrix(expected_output_array);
+        Matrix output_hidden = ForwardInputHidden(input_array);
+        Matrix final_output = ForwardHiddenOutput(output_hidden.matrix);
+        double loss = final_output.FullSum();
+        // Backward Pass from Output to Hidden
+        Matrix d_loss_d_activated = final_output - expected_output; 
+        Matrix d_activated_d_output = final_output * (1 - final_output);
+        Matrix d_loss_d_output = d_loss_d_activated * d_activated_d_output;
+        Matrix d_loss_d_weights_hidden_output = output_hidden.T() % d_loss_d_output;
+        Matrix d_loss_d_bias_hidden_output = d_loss_d_output.Sum();
+        Matrix d_loss_d_hidden_output = d_loss_d_output % weights_hidden_output.T();
+        // Backward Pass from Hidden to Input
+        Matrix d_activated_d_preactivated = output_hidden * (1 - output_hidden);
+        Matrix d_loss_d_hidden = d_activated_d_preactivated * d_loss_d_hidden_output;
+        Matrix d_loss_d_weights_input_hidden = input.T() % d_loss_d_hidden;
+        Matrix d_loss_d_bias_input_hidden = d_loss_d_hidden.Sum();
+        // Apply Weight/Bias Deltas
+        weights_input_hidden = weights_input_hidden + learning_rate * d_loss_d_weights_input_hidden;
+        weights_hidden_output = weights_hidden_output + learning_rate * d_loss_d_weights_hidden_output;
+        bias_input_hidden = bias_input_hidden + learning_rate * d_loss_d_bias_input_hidden;
+        bias_hidden_output = bias_hidden_output + learning_rate * d_loss_d_bias_hidden_output;
         return loss;
     }
 
-    public void Write2D(double[,] a)
+    public Matrix Predict(double[,] input_array)
     {
-        for (int i = 0; i < a.GetLength(0); i++)
-        {
-            for (int j = 0; j < a.GetLength(1); j++)
-            {
-                System.Console.Write(Convert.ToString(a[i, j]));
-                System.Console.Write(" ");
-            }
-            System.Console.WriteLine();
-        }
-    }
-
-    public void WriteNetwork()
-    {
-        System.Console.WriteLine("########## NETWORK DETAILS #############");
-        System.Console.WriteLine("Weights Input Hidden:");
-        Write2D(weights_input_hidden);
-        System.Console.WriteLine("Bias Input Hidden:");
-        Write2D(bias_input_hidden);
-        System.Console.WriteLine("Weights Hidden Output:");
-        Write2D(weights_hidden_output);
-        System.Console.WriteLine("Bias Hidden Output:");
-        Write2D(bias_hidden_output);
-        System.Console.WriteLine("########################################");
+        Matrix output_hidden = ForwardInputHidden(input_array);
+        Matrix final_output = ForwardHiddenOutput(output_hidden.matrix);
+        return final_output;
     }
 }
