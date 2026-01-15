@@ -43,7 +43,7 @@ class Matrix
     {
         if (left.matrix.GetLength(0) != right.matrix.GetLength(0) || left.matrix.GetLength(1) != right.matrix.GetLength(1))
         {
-            throw new Exception("Matrix addition failed as dimensions are not equal");
+            throw new Exception("Matrix subtraction failed as dimensions are not equal");
         }
         int rows = left.matrix.GetLength(0);
         int cols = right.matrix.GetLength(1);
@@ -77,7 +77,7 @@ class Matrix
     {
         if (left.matrix.GetLength(0) != right.matrix.GetLength(0) || left.matrix.GetLength(1) != right.matrix.GetLength(1))
         {
-            throw new Exception("Matrix addition failed as dimensions are not equal");
+            throw new Exception("Matrix elementwise multiplication failed as dimensions are not equal");
         }
         int rows = left.matrix.GetLength(0);
         int cols = right.matrix.GetLength(1);
