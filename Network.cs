@@ -115,10 +115,10 @@ class Network
         Matrix d_loss_d_weights_input_hidden = input.T() % d_loss_d_hidden;
         Matrix d_loss_d_bias_input_hidden = d_loss_d_hidden.Sum();
         // Apply Weight/Bias Deltas
-        weights_input_hidden = weights_input_hidden + learning_rate * d_loss_d_weights_input_hidden;
-        weights_hidden_output = weights_hidden_output + learning_rate * d_loss_d_weights_hidden_output;
-        bias_input_hidden = bias_input_hidden + learning_rate * d_loss_d_bias_input_hidden;
-        bias_hidden_output = bias_hidden_output + learning_rate * d_loss_d_bias_hidden_output;
+        weights_input_hidden = weights_input_hidden - learning_rate * d_loss_d_weights_input_hidden;
+        weights_hidden_output = weights_hidden_output - learning_rate * d_loss_d_weights_hidden_output;
+        bias_input_hidden = bias_input_hidden - learning_rate * d_loss_d_bias_input_hidden;
+        bias_hidden_output = bias_hidden_output - learning_rate * d_loss_d_bias_hidden_output;
         return loss;
     }
 
